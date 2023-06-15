@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <title>TodoList</title>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Todo-List</h1>
+        <div id="count">
+          <p id="completed-count">Completed: 0</p>
+          <p id="not-completed-count">Not completed: 0</p>
+        </div>
+        <form action="" id="task-form">
+          <input
+            type="text"
+            id="task-input"
+            placeholder="Enter item to do..."
+          />
+          <input type="time" id="time-input" />
+
+          <input type="submit" id="submit" value="Add" />
+        </form>
+      </header>
+      <main>
+        <section class="task-list">
+          <div id="tasks"></div>
+        </section>
+      </main>
+    </div>
+    <script src="./script.js"></script>
+  </body>
+</html>
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  font-family: "Lucida Sans";
+}
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f2e8cf;
+}
+header {
+  padding: 2rem 1rem;
+  max-width: 700px;
+  width: 100%;
+  margin: 0 auto;
+}
+header h1 {
+  font-size: 2.5rem;
+  font-weight: 400;
+  color: black;
+  margin-bottom: 1.5rem;
+}
+#task-form {
+  display: flex;
+}
+
+input,
+button {
+  appearance: none;
+  border: none;
+  outline: none;
+  background: none;
+}
+
+#task-input {
+  flex: 1 1 0%;
+  padding: 1rem;
+  border: 1px solid black;
+  border-radius: 1rem;
+  margin-right: 1rem;
+  color: black;
+  font-size: 1.25rem;
+}
+#task-input::placeholder {
+  color: black;
+}
+#task-submit {
+  color: black;
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.4s;
+  border: 1px solid black;
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+#task-submit:hover {
+  opacity: 0.8;
+}
+
+#task-submit:active {
+  opacity: 0.6;
+}
+.container {
+  flex: 0% 1 0%;
+  max-width: 750px;
+  width: 100%;
+  margin: 2rem auto;
+  border-radius: 1rem;
+  background-color: rgb(250, 182, 9);
+}
+main {
+  flex: 1 1 0%;
+  max-width: 700px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.task-list {
+  padding: 1rem;
+}
+
+#tasks .task {
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid black;
+  padding: 1rem;
+  border-radius: 1rem;
+  margin-bottom: 1rem;
+  margin-top: 1rem;
+}
+#tasks .task .content {
+  flex: 1 1 0%;
+}
+#tasks .task .content .text {
+  font-size: 1.13rem;
+  width: 100%;
+  display: block;
+  transition: 0.4s;
+}
+/* #tasks .task .content .text:not(:read-only){
+    color: rgb(106, 199, 106);
+} */
+#tasks .task .actions {
+  display: flex;
+  margin: 0 -0.5rem;
+}
+
+.task .actions button {
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 800;
+  margin: 0 0.5rem;
+  text-transform: uppercase;
+  transition: 0.4s;
+}
+.task .actions button:hover {
+  opacity: 0.8;
+}
+
+.task .actions button:active {
+  opacity: 0.6;
+}
+.task .actions .edit {
+  color: rgb(217, 255, 0);
+}
+.task .actions .delete {
+  color: rgb(175, 0, 35);
+}
+.task .actions .completed {
+  color: rgb(0, 188, 16);
+}
+
+.strike {
+  text-decoration: line-through;
+}
+#count{
+  font-size: 30px;
+}
+
+#not-completed-count{
+  margin-bottom: 20px;
+}
+
+.task .content .deadline {
+  font-size: 1rem;
+  color: black;
+  margin-top: 0.5rem;
+}
+
+.task .content .deadline.red {
+  color: red;
+}
+
+#time-input{
+  padding: 5px;
+  border: 1px solid black;
+    border-radius: 1rem;
+    margin-right: 10px;
+}
+
+const newTodo = document.getElementById("task-input");
+const timeInput = document.getElementById("time-input");
+const list = document.getElementById("tasks");
+const completed = document.getElementById("count");
+
+let todoArray = [];
+
+if (localStorage.getItem("todoArray")) {
+  todoArray = JSON.parse(localStorage.getItem("todoArray"));
+  render();
+  updateCompletedCount();
+} else {
+  fetch("/todoArray")
+    .then((resp) => resp.json())
+    .then((resp) => {
+      todoArray = resp;
+      render();
+      updateCompletedCount();
+    })
+    .catch((error) => {
+      console.error(error);
+    });
+}
+
+function sendTodos() {
+  fetch("/todoArray", {
+    method: "post",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ todoArray: todoArray }),
+  });
+}
+
+function onDelete(index) {
+  todoArray.splice(index, 1);
+  sendTodos();
+  updateCompletedCount();
+  render();
+}
+
+function render() {
+  list.innerHTML = "";
+
+  for (let index = 0; index < todoArray.length; index++) {
+    const todo = todoArray[index];
+
+    const todoDiv = document.createElement("div");
+    todoDiv.className = "todo";
+
+    const checkbox = document.createElement("button");
+    checkbox.type = "complited";
+    checkbox.checked = todo.isCompleted;
+    checkbox.addEventListener("click", () => onCheck(index));
+    todoDiv.appendChild(checkbox);
+
+    const taskSpan = document.createElement("span");
+    taskSpan.className = "task";
+    taskSpan.textContent = todo.text;
+    todoDiv.appendChild(taskSpan);
+
+    const timestampSpan = document.createElement("span");
+    timestampSpan.className = "timestamp";
+    timestampSpan.textContent = getFormattedTime(todo.timestamp);
+    todoDiv.appendChild(timestampSpan);
+
+    const editButton = document.createElement("button");
+    editButton.className = "edit";
+    editButton.textContent = "edit";
+    editButton.addEventListener("click", () => onEdit(index));
+    todoDiv.appendChild(editButton);
+
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "trash";
+    deleteButton.textContent = "delete";
+    deleteButton.addEventListener("click", () => onDelete(index));
+    todoDiv.appendChild(deleteButton);
+
+    list.appendChild(todoDiv);
+  }
+  sendTodos();
+}
+
+function getFormattedTime(timeValue) {
+  const [hours, minutes] = timeValue.split(":");
+  const formattedTime = `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
+  return formattedTime;
+}
+
+function onEnter(event) {
+  event.preventDefault();
+
+  if (!newTodo.value || !timeInput.value) return;
+
+  const timestamp = timeInput.value;
+  todoArray.push({ text: newTodo.value, isCompleted: false, timestamp });
+  newTodo.value = "";
+  timeInput.value = "";
+
+  sendTodos();
+  render();
+}
+
+function onCheck(index) {
+  todoArray[index].isCompleted = !todoArray[index].isCompleted;
+  updateCompletedCount();
+
+  sendTodos();
+}
+
+function updateCompletedCount() {
+  const completedCount = todoArray.filter((todo) => todo.isCompleted).length;
+  completed.textContent = "Completed: " + completedCount;
+}
+
+document.getElementById("task-form").addEventListener("submit", onEnter);
